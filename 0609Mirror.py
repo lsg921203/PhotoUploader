@@ -4,6 +4,7 @@ from tkinter import Canvas
 import picamera
 import os, socket
 import threading
+import time
 
 root = tk.Tk()
 root.title("Photo upload")
@@ -15,6 +16,9 @@ mirrorOn=False
 
 def Exit():
     global root
+    if(mirrorOn==True):
+        mirrorOn = False
+        time.sleep(0.5)
     root.destroy()
 
 def Mirror():
@@ -32,8 +36,8 @@ def Mirror():
         
         
 
-        camera.capture("tmp" + '/'+"tmp"+".png")
-        image = tk.PhotoImage(file = "tmp"+'/'+"tmp"+".png")# show on the screean
+        camera.capture("tmp" + '/'+"tmp"+".gif")
+        image = tk.PhotoImage(file = "tmp"+'/'+"tmp"+".gif")# show on the screean
         
         #canvas.image = photo
         canvas.create_image(0,0,anchor='nw',image=image)
