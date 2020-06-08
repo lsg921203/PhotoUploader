@@ -113,7 +113,7 @@ def webUpload():
 
     upload = {'file': files}
 
-    obj = {"title": f_dir+"/"+f_name, "type": "pc"}
+    obj = {"title": f_dir+"/"+f_name, "type": "raspberry"}
 
     res = requests.post("http://192.168.22.127:7878/helloWeb/upload.jsp", files=upload, data=obj)
 
