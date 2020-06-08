@@ -115,7 +115,7 @@ def webUpload():
 
     obj = {"title": f_dir+"/"+f_name, "type": "pc"}
 
-    res = requests.post("http://localhost:7878/helloWeb/upload.jsp", files=upload, data=obj)
+    res = requests.post("http://192.168.22.127:7878/helloWeb/upload.jsp", files=upload, data=obj)
 
 def socketUpload():
     
@@ -190,7 +190,8 @@ resolutionRadioButton3.place( x=X1+2*Xdif , y=Y1+2*Ydif)
 
 
 #imageScreen.place(   x=300 , y=10 )
-socketUploadButton.place(  x=450 , y=260 ) 
+webUploadButton.place(      x=350 , y=260 )
+socketUploadButton.place(   x=450 , y=260 )
 
 exitButton.place(    x=570 , y=260 )
 root.mainloop()
