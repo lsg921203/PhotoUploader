@@ -4,6 +4,7 @@ import picamera
 import time
 import RPi.GPIO as GPIO
 import requests
+from tkinter import messagebox
 
 SWITCH = 26#GPIO26
 RLED = 19
@@ -117,6 +118,7 @@ def webUpload():
 
     res = requests.post("http://192.168.22.127:7878/helloWeb/upload.jsp", files=upload, data=obj)
 
+    messagebox.showinfo("info",res.content)
 def socketUpload():
     
     HOST = '192.168.22.91'#'192.168.22.127'#'192.168.22.127'#'192.168.103.61'  
