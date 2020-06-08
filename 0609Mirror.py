@@ -16,6 +16,7 @@ mirrorOn=False
 
 def Exit():
     global root
+    global mirrorOn
     if(mirrorOn==True):
         mirrorOn = False
         time.sleep(0.5)
