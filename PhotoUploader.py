@@ -11,7 +11,7 @@ RLED = 19
 GLED = 13
 BLED = 6
 #----------------------------------------------
-#IO initialize
+#IO initialize test
 GPIO.setmode(GPIO.BCM)
 
 GPIO.setup(SWITCH, GPIO.IN)
