@@ -3,6 +3,7 @@ import os, socket
 import picamera
 import time
 import RPi.GPIO as GPIO
+import requests
 
 SWITCH = 26#GPIO26
 RLED = 19
@@ -104,7 +105,17 @@ def up(soc):
     soc.sendall((f_name+'/'+str(f_size)).encode())
     time.sleep(0.5*(f_size/90000))
     soc.sendall(body)
-    
+
+def webUpload():
+    f_dir = foldername.get()
+    f_name = filename.get() + ".png"
+    files = open(f_dir+"/"+f_name, 'rb')
+
+    upload = {'file': files}
+
+    obj = {"title": f_dir+"/"+f_name, "type": "pc"}
+
+    res = requests.post("http://localhost:7878/helloWeb/upload.jsp", files=upload, data=obj)
 
 def socketUpload():
     
@@ -117,7 +128,7 @@ def socketUpload():
     time.sleep(0.5)
     client_socket.sendall('stop'.encode())
     client_socket.close()
-    
+
 def mk_dir():
     global foldername
     if not os.path.isdir(foldername.get()):
@@ -146,7 +157,7 @@ resolutionRadioButton1 = tk.Radiobutton(root,text = "320x240"   , value=0, varia
 resolutionRadioButton2 = tk.Radiobutton(root,text = "640x480"   , value=1, variable = resolutionnum)
 resolutionRadioButton3 = tk.Radiobutton(root,text = "1024x768"  , value=2, variable = resolutionnum)#resolution control button making
 
-
+webUploadButton  = tk.Button(root, text="WebUpload", command = webUpload)
 socketUploadButton = tk.Button(root, text="SocketUpload", command = socketUpload)
 
 exitButton = tk.Button(root, text="Exit", command = Exit)
