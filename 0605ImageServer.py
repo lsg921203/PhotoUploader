@@ -1,203 +1,229 @@
 import tkinter as tk
 import os, socket
-import picamera
 import time
-import RPi.GPIO as GPIO
-import requests
+import threading
 
-SWITCH = 26  # GPIO26
-RLED = 19
-GLED = 13
-BLED = 6
-# ----------------------------------------------
-# IO initialize
-GPIO.setmode(GPIO.BCM)
-
-GPIO.setup(SWITCH, GPIO.IN)
-GPIO.setup(RLED, GPIO.OUT, initial=GPIO.LOW)
-GPIO.setup(GLED, GPIO.OUT, initial=GPIO.LOW)
-GPIO.setup(BLED, GPIO.OUT, initial=GPIO.LOW)
-
-r = GPIO.PWM(RLED, 100)
-g = GPIO.PWM(GLED, 60)
-b = GPIO.PWM(BLED, 70)
-
-rdc = 0.0
-gdc = 0.0
-bdc = 0.0
-
-r.start(rdc)
-g.start(gdc)
-b.start(bdc)
-
-# ------------------------------------------------
-# UI Initialize
 root = tk.Tk()
-root.title("Photo upload")
-root.geometry("630x300+100+100")
+root.title("자료실")
+root.geometry("800x600+100+100")
 
-foldername = tk.StringVar()
-filename = tk.StringVar()
-effectnum = tk.IntVar()
-resolutionnum = tk.IntVar()
-
-effect = ['negative', 'colorswap', 'film', 'blur', 'pastel', 'sketch', 'watercolor']
-resolution = [(320, 240), (640, 480), (1024, 768)]  # 1.320X240 2.640X480 3.1024X768
-
-
-# -----------------------------------------------
-
-
-def Exit():
-    global root
-
-    # close the GUI
-    root.destroy()
-
-    # close the IO
-    GPIO.remove_event_detect(SWITCH)
-    GPIO.cleanup()
-
-
-def ShotBySW(p):
-    Shot()
-    time.sleep(0.5)
-
-
-def Shot():
-    global root
+exitCheck = False
+imagelist = []
+idx = 0
+def nextImage():
+    
+    global imagelist
+    global idx
     global image
     global imageScreen
-    global filename
-    global foldername
-
-    mk_dir()
-
-    # take photo and save
-    camera = picamera.PiCamera()  # camera initialize
-    camera.resolution = (320, 240)
-    camera.image_effect = effect[effectnum.get()]
-
-    r.ChangeDutyCycle(100.)  # flash on
-    g.ChangeDutyCycle(100.)
-    b.ChangeDutyCycle(100.)
-    time.sleep(0.05)
-    camera.capture(foldername.get() + '/' + "tmp" + ".png")
-    camera.resolution = resolution[resolutionnum.get()]
-    # resolution change(      )
-    camera.capture(foldername.get() + '/' + filename.get() + ".png")  # take a photo
-    camera.close()
-
-    time.sleep(0.05)
-    r.ChangeDutyCycle(0.)  # flash off
-    g.ChangeDutyCycle(0.)
-    b.ChangeDutyCycle(0.)
-
-    image = tk.PhotoImage(file=foldername.get() + '/' + "tmp" + ".png")  # show on the screean
-    imageScreen = tk.Label(root, image=image)
-    imageScreen.place(x=300, y=10)
-    print(effect[effectnum.get()])
-
-
-def up(soc):
-    f_dir = foldername.get()
-    f_name = filename.get() + ".png"
-    f_size = os.path.getsize(f_dir + '/' + f_name)
-    f = open(f_dir + '/' + f_name, 'rb')
-    body = f.read()
-    f.close()
-    soc.sendall((f_name + '/' + str(f_size)).encode())
-    time.sleep(0.5 * (f_size / 90000))
-    soc.sendall(body)
+    print(idx)
+    if(len(imagelist)>0):
+        
+        idx +=1
+        if(idx>=len(imagelist)):
+            idx=0
+        print(idx)
+        print(imagelist[idx])
+        image = tk.PhotoImage(file = "refs/"+imagelist[idx])
+        imageScreen = tk.Label(root, image = image)
+        imageScreen.place(x=200, y=100)
+        filename.set(imagelist[idx])
+        
+    
+def beforeImage():
+    global imagelist
+    global idx   
+    global image
+    global imageScreen
+    print(idx)
+    if(len(imagelist)>0):
+        
+        idx -=1
+        if(idx<0):
+            idx=len(imagelist)-1
+        print(idx)
+        print(imagelist[idx])
+        image = tk.PhotoImage(file = "refs/"+imagelist[idx])
+        imageScreen = tk.Label(root, image = image)
+        imageScreen.place(x=200, y=100)
+        filename.set(imagelist[idx])
+    
+def Exit():
+    global root
+    global exitCheck
+    exitCheck = True
+    time.sleep(0.3)
+    root.destroy()
 
 
-def webUpload():
-    f_dir = foldername.get()
-    f_name = filename.get() + ".png"
-    files = open(f_dir + "/" + f_name, 'rb')
-
-    upload = {'file': files}
-
-    obj = {"title": f_dir + "/" + f_name, "type": "pc"}
-
-    res = requests.post("http://192.168.22.127:7878/helloWeb/upload.jsp", files=upload, data=obj)
 
 
-def socketUpload():
-    HOST = '192.168.22.127'  # '192.168.22.127'#'192.168.22.127'#'192.168.103.61'
-    PORT = 9999
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((HOST, PORT))
-    client_socket.sendall('up'.encode())
-    up(client_socket)
-    time.sleep(0.5)
-    client_socket.sendall('stop'.encode())
+#GUI의 mainloop가 돌고 있으면 up, down, stop 을 기다릴 수 없으므로 thread 하나를 돌려야함
+
+#messageWaiting = threading.Thread(target=
+def waitClient():
+    global exitCheck
+    global client_socket
+    global server_socket
+    
+    while exitCheck==False: 
+        client_socket, addr = server_socket.accept()
+        waitMessage()
+    server_socket.close()
+
+def waitMessage():
+    global client_socket
+    global exitCheck
+    while True:
+        data = client_socket.recv(1024)
+        menu = data.decode()
+        print('menu:', menu)
+        if menu=='up':
+            upload(client_socket)
+        elif menu=='down':
+            download(client_socket)
+        elif menu=='stop':
+            break
+        if exitCheck==True:
+            break
+
     client_socket.close()
 
-
+    
 def mk_dir():
-    global foldername
-    if not os.path.isdir(foldername.get()):
-        print(foldername.get() + '디렉토리 생성')
-        os.mkdir(foldername.get())
+    if not os.path.isdir('refs'):
+        print('refs 디렉토리 생성')
+        os.mkdir('refs')
+
+def dir_list():
+    return os.listdir('refs')
+
+def upload(soc):
+    global imagelist
+    global uploadLabel
+    data = soc.recv(1024)
+    data2 = data.decode()
+    k = data2.split('/')
+    f_name = k[0]
+    f_size = int(k[1])
+    print('f_name : ', f_name)
+    print('f_size : ', f_size)
+    f_list = dir_list()
+    for f in f_list:
+        if f_name == f:
+            s = f_name.split('.')
+            f_name = s[0]+'_1.'+s[1]
+    f = open('refs/'+f_name, 'wb')#
+    data = soc.recv(f_size)
+    body = data
+    print('body:', body)
+    f.write(body)
+    
+    f.close()
+
+    imagelist = makeImageList(dir_list())
+    
+   
+    uploadfilename.set(f_name+" is uploaded")
+
+def download(soc):
+    msg = dir_list()
+    str1 = ""
+    for idx,l in enumerate(msg):
+        str1 += str(idx)+"."+l+"\n"
+    data = str1.encode()
+    soc.sendall(data)
+
+    data = soc.recv(1024)
+    menu = int(data)
+    f = open('refs/'+msg[menu], 'rb')
+
+    body = f.read()
+    f.close()
+    
+    soc.sendall((msg[menu].encode()))
+    soc.sendall(body)
+    
+def main():
+    global client_socket
+    global server_socket
+    
+    HOST = '192.168.22.127'#'192.168.103.61'  #server ip
+    PORT = 9999         #server port
+
+    #server socket open. socket.AF_INET:주소체계(IPV4), socket.SOCK_STREAM:tcp 
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    #포트 여러번 바인드하면 발생하는 에러 방지
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    #바인드:오픈한 소켓에 IP와 PORT 할당
+    server_socket.bind((HOST, PORT))
+
+    #이제 accept할 수 있음을 알림
+    server_socket.listen()
+
+    t1 = threading.Thread(target=waitClient)
+    t1.start()
+
+def makeImageList(imgs):
+    n=0
+    while len(imgs)>n:
+        strs = imgs[n].split(".")
+        if(len(strs)==2):
+            if(strs[1]!="png"):
+                del imgs[n]
+            else:
+                n+=1
+        else:
+            del imgs[n]
+    return imgs
+    
+
+    
+mk_dir()
+
+#GUI 배치
+
+imagelist = makeImageList(dir_list())
+filename = tk.StringVar()
+filename.set("")
+uploadfilename = tk.StringVar()
+uploadfilename.set("waiting")
+
+if(len(imagelist)>0):
+    image = tk.PhotoImage(file = "refs/"+imagelist[0])
+    imageScreen = tk.Label(root, image = image)
+    imageScreen.place(x=200, y=100)
+    filename.set(imagelist[0])
 
 
-GPIO.add_event_detect(SWITCH, GPIO.RISING, ShotBySW, 1000)
+pictureLabel    = tk.Label( root,   textvariable = filename)
+pictureLabel.place( x=390,  y=50)
+ 
+nextButton      = tk.Button(root,   text=">",   command=nextImage)
+beforeButton    = tk.Button(root,   text="<",   command=beforeImage)
 
-folderLabel = tk.Label(root, text="folder name")
-folderTextBox = tk.Entry(root, width=20, textvariable=foldername)
+uploadLabel    = tk.Label( root,   textvariable=uploadfilename)
+uploadLabel.place( x=390,  y=500)
 
-fileLabel = tk.Label(root, text="file name")
-fileTextBox = tk.Entry(root, width=20, textvariable=filename)
+ExitButton      = tk.Button(root,text="Exit", command=Exit)
 
-shotButton = tk.Button(root, text="Shot!", command=Shot)
 
-effectRadioButton1 = tk.Radiobutton(root, text="negative", value=0, variable=effectnum)
-effectRadioButton2 = tk.Radiobutton(root, text="colorswap", value=1, variable=effectnum)
-effectRadioButton3 = tk.Radiobutton(root, text="film", value=2, variable=effectnum)
-effectRadioButton4 = tk.Radiobutton(root, text="blur", value=3, variable=effectnum)
-effectRadioButton5 = tk.Radiobutton(root, text="pastel", value=4, variable=effectnum)
-effectRadioButton6 = tk.Radiobutton(root, text="sketch", value=5, variable=effectnum)
-effectRadioButton7 = tk.Radiobutton(root, text="watercolor", value=6, variable=effectnum)
 
-resolutionRadioButton1 = tk.Radiobutton(root, text="320x240", value=0, variable=resolutionnum)
-resolutionRadioButton2 = tk.Radiobutton(root, text="640x480", value=1, variable=resolutionnum)
-resolutionRadioButton3 = tk.Radiobutton(root, text="1024x768", value=2,
-                                        variable=resolutionnum)  # resolution control button making
+nextButton.place(   x=700,  y=300)
+beforeButton.place( x=100,  y=300)
 
-webUploadButton = tk.Button(root, text="WebUpload", command=webUpload)
-socketUploadButton = tk.Button(root, text="SocketUpload", command=socketUpload)
+ExitButton.place(   x=400,  y=550)
 
-exitButton = tk.Button(root, text="Exit", command=Exit)
-
-folderLabel.place(x=20, y=10)
-folderTextBox.place(x=120, y=10)
-
-fileLabel.place(x=20, y=40)
-fileTextBox.place(x=120, y=40)
-
-shotButton.place(x=125, y=100)
-
-X1 = 10
-Xdif = 95
-Y1 = 160
-Ydif = 30
-effectRadioButton1.place(x=X1 + 0 * Xdif, y=Y1 + 0 * Ydif)
-effectRadioButton2.place(x=X1 + 0 * Xdif, y=Y1 + 1 * Ydif)
-effectRadioButton3.place(x=X1 + 0 * Xdif, y=Y1 + 2 * Ydif)
-effectRadioButton7.place(x=X1 + 0 * Xdif, y=Y1 + 3 * Ydif)
-effectRadioButton4.place(x=X1 + 1 * Xdif, y=Y1 + 0 * Ydif)
-effectRadioButton5.place(x=X1 + 1 * Xdif, y=Y1 + 1 * Ydif)
-effectRadioButton6.place(x=X1 + 1 * Xdif, y=Y1 + 2 * Ydif)
-
-resolutionRadioButton1.place(x=X1 + 2 * Xdif, y=Y1 + 0 * Ydif)
-resolutionRadioButton2.place(x=X1 + 2 * Xdif, y=Y1 + 1 * Ydif)
-resolutionRadioButton3.place(x=X1 + 2 * Xdif, y=Y1 + 2 * Ydif)
-
-# imageScreen.place(   x=300 , y=10 )
-webUploadButton.place(x=350, y=260)
-socketUploadButton.place(x=450, y=260)
-
-exitButton.place(x=570, y=260)
+main()
 root.mainloop()
+
+
+
+
+
+
+
+    
 
