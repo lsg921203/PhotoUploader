@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import Canvas
 import os, socket
 import picamera
 import time
@@ -92,8 +93,10 @@ def Shot():
     b.ChangeDutyCycle(0.)
     
     image = tk.PhotoImage(file = foldername.get()+'/'+"tmp"+".png")# show on the screean
-    imageScreen = tk.Label(root, image = image)
-    imageScreen.place(   x=300 , y=10 ) 
+    
+    canvas.create_image(0,0,anchor='nw',image=image)
+    canvas.image = image
+    
     print(effect[effectnum.get()])
     
 def up(soc):
@@ -159,6 +162,8 @@ resolutionRadioButton1 = tk.Radiobutton(root,text = "320x240"   , value=0, varia
 resolutionRadioButton2 = tk.Radiobutton(root,text = "640x480"   , value=1, variable = resolutionnum)
 resolutionRadioButton3 = tk.Radiobutton(root,text = "1024x768"  , value=2, variable = resolutionnum)#resolution control button making
 
+canvas = Canvas(height=240, width=320)
+
 webUploadButton  = tk.Button(root, text="WebUpload", command = webUpload)
 socketUploadButton = tk.Button(root, text="SocketUpload", command = socketUpload)
 
@@ -189,7 +194,7 @@ resolutionRadioButton1.place( x=X1+2*Xdif , y=Y1+0*Ydif)
 resolutionRadioButton2.place( x=X1+2*Xdif , y=Y1+1*Ydif)
 resolutionRadioButton3.place( x=X1+2*Xdif , y=Y1+2*Ydif)
 
-
+canvas.place(   x=300 , y=10 )
 
 #imageScreen.place(   x=300 , y=10 )
 webUploadButton.place(      x=350 , y=260 )

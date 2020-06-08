@@ -84,7 +84,7 @@ canvas = Canvas(height=240, width=320)
 
 
 shotButton.place(    x=125 , y=100 )
-exitButton.place(    x=125 , y=250 )
+exitButton.place(    x=125 , y=200 )
 canvas.place(   x=300 , y=10 ) 
 
 root.mainloop()
