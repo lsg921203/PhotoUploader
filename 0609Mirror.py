@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import Canvas
 import picamera
 import os, socket
 import threading
@@ -23,6 +24,7 @@ def Mirror():
     global filename
     global foldername
     global mirrorOn
+    global canvas
     camera = picamera.PiCamera()# camera initialize
     camera.resolution = (320,240)
     
@@ -32,8 +34,10 @@ def Mirror():
 
         camera.capture("tmp" + '/'+"tmp"+".png")
         image = tk.PhotoImage(file = "tmp"+'/'+"tmp"+".png")# show on the screean
-        imageScreen = tk.Label(root, image = image)
-        imageScreen.place(   x=300 , y=10 ) 
+        
+        #canvas.image = photo
+        canvas.create_image(0,0,anchor='nw',image=image)
+        canvas.image = image
     
     camera.close()
     
@@ -76,8 +80,11 @@ resolution = [(320,240),(640,480),(1024,768)]# 1.320X240 2.640X480 3.1024X768
 shotButton = tk.Button(root, text="Shot!", command = Shot)
 exitButton = tk.Button(root, text="Exit", command = Exit)
 
+canvas = Canvas(height=240, width=320)
+
+
 shotButton.place(    x=125 , y=100 )
 exitButton.place(    x=125 , y=250 )
-
+canvas.place(   x=300 , y=10 ) 
 
 root.mainloop()
