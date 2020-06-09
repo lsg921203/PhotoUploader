@@ -1,6 +1,7 @@
 import cv2, socket, threading
 import tkinter as tk
 
+exitCheck = False
 def waitClient():
     global exitCheck
     global client_socket
