@@ -13,13 +13,14 @@ root.geometry("630x300+100+100")
 foldername = "tmp"
 
 mirrorOn=False
-
+t1 = threading.Thread()
 def Exit():
     global root
     global mirrorOn
+    global t1
     if(mirrorOn==True):
         mirrorOn = False
-        time.sleep(0.5)
+        #t1.join()# .....
     root.destroy()
 
 def Mirror():
@@ -55,7 +56,7 @@ def Shot():
     global filename
     global foldername
     global mirrorOn
-    
+    global t1
     if(mirrorOn==False):
         mirrorOn = True
         t1 = threading.Thread(target=Mirror)
