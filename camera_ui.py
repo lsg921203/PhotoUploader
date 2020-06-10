@@ -18,13 +18,13 @@ class Application(tk.Frame):
         self.ra = []
         self.dir_l = tk.Label(self, width=10, font=60, text='폴더경로:')
         self.dir_l.pack()
-        #self.dir_e = tk.Entry(self, width=30)#입력창
-        #self.dir_e.pack()
+        self.dir_e = tk.Entry(self, width=30)#입력창
+        self.dir_e.pack()
         
         self.file_l = tk.Label(self, width=10, font=60, text='파일명:')
         self.file_l.pack()
-        #self.file_e = tk.Entry(self, width=30)#입력창
-        #self.file_e.pack()
+        self.file_e = tk.Entry(self, width=30)#입력창
+        self.file_e.pack()
         
         self.save_btn = tk.Button(self, width=10, font=60, text='촬영')
         self.save_btn.pack()
@@ -55,8 +55,8 @@ app = Application(master=root)
 
 def save_event():
     #camera capture
-    dir_name = "tmp"#app.dir_e.get()
-    file_name = "tmp"#app.file_e.get()
+    dir_name = app.dir_e.get()
+    file_name = app.file_e.get()
     
     flagf = False
     flagd = os.path.isdir(dir_name)
@@ -99,28 +99,3 @@ app.save_btn['command']=save_event
 app.up_soc['command']=up_soc_event
 app.mainloop()
 
-
-def main():
-    HOST = '192.168.103.70'  # server ip
-    PORT = [1111, 2222, 3333]  # server port
-
-    client_soc = [0, 0, 0]
-    th = [0, 0, 0]
-    func = [th_me, th_oth, th_msg]
-    flag = False
-
-    for i in range(0, len(client_soc)):
-        client_soc[i] = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_soc[i].connect((HOST,PORT[i]))
-
-
-    for i in range(0, len(soc)):
-        client_soc[i] = soc[i].accept()
-        th[i] = threading.Thread(target=func[i], args=(client_soc[i], lambda: flag))
-        th[i].start()
-
-    app.send.bind('<Button-1>', partial: (send_event, client_soc[2]))
-    app.mainloop()
-
-
-main()
